@@ -1,6 +1,6 @@
 # Django
 lahore_car_rental/db.sqlite3
-lahore_car_rental/lahore_car_rental/__pycache__/
+lahore_car_rental/**/__pycache__/
 
 # Virtual Environment
 .venv/

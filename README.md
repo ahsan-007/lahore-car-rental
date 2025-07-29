@@ -2,13 +2,29 @@
 
 A Django REST Framework API for managing car rental bookings in Lahore.
 
+## Features
+
+- **User Authentication**: JWT-based authentication with registration and login
+- **API Documentation**: Swagger/OpenAPI documentation
+- **Comprehensive Testing**: Unit tests for models, serializers, and views
 
 ## Tech Stack
 
 - **Backend**: Django 5.2.4, Django REST Framework
+- **Authentication**: JWT (djangorestframework-simplejwt)
+- **Documentation**: drf-yasg (Swagger/OpenAPI)
 - **Database**: SQLite (development)
 - **Testing**: Django's built-in testing framework
 
+## API Endpoints
+
+### Authentication
+- `POST /register/` - User registration
+- `POST /login/` - User login (JWT token)
+
+### Documentation
+- `/swagger/` - Swagger UI
+- `/redoc/` - ReDoc documentation
 
 ## Quick Start
 
@@ -53,6 +69,7 @@ A Django REST Framework API for managing car rental bookings in Lahore.
 
 7. Access the API:
    - API Root: http://localhost:8000/
+   - Swagger Documentation: http://localhost:8000/swagger/
    - Admin Panel: http://localhost:8000/admin/
 
 
@@ -63,9 +80,21 @@ Run tests:
 python manage.py test
 ```
 
+Run specific app tests:
+```bash
+python manage.py test authentication
+```
+
+
+### Security
+- JWT-based authentication
+- User-specific data access
+- Input validation and sanitization
+
 ## Development
 
-### Code Style
-- Follows PEP 8 standards
-- Configured with autopep8 and isort
-- Comprehensive docstrings and comments
+
+### Testing Strategy
+- Unit tests for models, serializers, and views
+- Integration tests for API workflows
+- Edge case testing for business logic

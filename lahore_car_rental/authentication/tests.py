@@ -33,7 +33,6 @@ class AuthenticationTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('access', response.data)
-        self.assertIn('refresh', response.data)
 
         # Verify user was created in database
         self.assertTrue(User.objects.filter(username='testuser123').exists())
@@ -127,7 +126,6 @@ class AuthenticationTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('access', response.data)
-        self.assertIn('refresh', response.data)
 
     def test_user_login_wrong_password(self):
         """Test login fails with incorrect password"""
@@ -175,17 +173,13 @@ class AuthenticationTestCase(APITestCase):
 
         # Verify token structure
         access_token = response.data['access']
-        refresh_token = response.data['refresh']
 
         # JWT tokens should have 3 parts separated by dots
         self.assertEqual(len(access_token.split('.')), 3)
-        self.assertEqual(len(refresh_token.split('.')), 3)
 
         # Tokens should be strings and not empty
         self.assertIsInstance(access_token, str)
-        self.assertIsInstance(refresh_token, str)
         self.assertGreater(len(access_token), 0)
-        self.assertGreater(len(refresh_token), 0)
 
     def test_username_length_validation(self):
         """Test username length validation (min 3, max 150 characters)"""

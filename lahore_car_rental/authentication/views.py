@@ -21,7 +21,6 @@ class RegisterView(APIView):
                                      type=openapi.TYPE_OBJECT,
                                      properties={
                                          "message": openapi.Schema(type=openapi.TYPE_STRING),
-                                         "refresh": openapi.Schema(type=openapi.TYPE_STRING),
                                          "access": openapi.Schema(type=openapi.TYPE_STRING),
                                          "user": openapi.Schema(
                                              type=openapi.TYPE_OBJECT,
@@ -34,7 +33,6 @@ class RegisterView(APIView):
                                      },
                                      example={
                                          "message": "User registered successfully",
-                                         "refresh": "refresh_token_here",
                                          "access": "access_token_here",
                                          "user": {
                                              "id": 1,
@@ -56,7 +54,6 @@ class RegisterView(APIView):
                 refresh = RefreshToken.for_user(user)
                 return Response({
                     "message": "User registered successfully",
-                    "refresh": str(refresh),
                     "access": str(refresh.access_token),
                     "user": {
                         "id": user.id,
@@ -80,7 +77,6 @@ class LoginView(TokenObtainPairView):
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
-                        "refresh": openapi.Schema(type=openapi.TYPE_STRING),
                         "access": openapi.Schema(type=openapi.TYPE_STRING),
                         "user": openapi.Schema(
                             type=openapi.TYPE_OBJECT,
@@ -92,13 +88,12 @@ class LoginView(TokenObtainPairView):
                         ),
                     },
                     example={
+                        "access": "access_token_here",
                         "user": {
                             "id": 1,
                             "username": "example_user",
                             "email": "user@example.com"
-                        },
-                        "refresh": "refresh_token_here",
-                        "access": "access_token_here"
+                        }
                     }
                 )
             ),
@@ -114,7 +109,8 @@ class LoginView(TokenObtainPairView):
             if serializer.is_valid():
                 user = serializer.user
 
-                # Add user details to the response
+                # Remove refresh token and add user details to the response
+                response.data.pop('refresh', None)
                 response.data.update({
                     "user": {
                         "id": user.id,

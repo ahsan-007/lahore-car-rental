@@ -18,9 +18,9 @@ def validate_license_plate(value):
 
     # Common Pakistan license plate patterns
     pakistan_patterns = [
-        r'^[A-Z]{2,3}-\d{3,4}$',  # e.g., ABC-1234, AB-123
-        r'^[A-Z]{2,3}\d{3,4}$',   # e.g., ABC1234, AB123
-        r'^[A-Z]{3}-\d{2}-\d{4}$',  # e.g., ABC-12-3456
+        r'^[A-Z]{2,3}-\d{2,4}$',  # e.g., ABC-1234, AB-123
+        r'^[A-Z]{2,3}\d{2,4}$',   # e.g., ABC1234, AB123
+        r'^[A-Z]{3}-\d{2}-\d{2,4}$',  # e.g., ABC-12-3456
         r'^[A-Z]{2}\d{2}[A-Z]{2}\d{4}$',  # e.g., LH12AB1234 (Lahore format)
     ]
 

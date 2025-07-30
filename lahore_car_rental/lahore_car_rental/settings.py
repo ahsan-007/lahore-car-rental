@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_yasg",
     "authentication",
-    "vehicles"
+    "vehicles",
+    "bookings"
 ]
 
 MIDDLEWARE = [

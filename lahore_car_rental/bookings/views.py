@@ -2,12 +2,14 @@ from rest_framework import generics, permissions
 from .models import Booking
 from .serializers import BookingSerializer
 from vehicles.models import Vehicle
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError as DRFValidationError
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.dateparse import parse_date
 from django.utils import timezone
 from datetime import datetime, time
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from .validators import validate_booking_overlap
 
 
 class BookingListCreateView(generics.ListCreateAPIView):
@@ -55,10 +57,10 @@ class BookingListCreateView(generics.ListCreateAPIView):
                         datetime.combine(parsed_from_date, time.min))
                     queryset = queryset.filter(start_date__gte=from_datetime)
                 else:
-                    raise ValidationError(
+                    raise DRFValidationError(
                         {'from': 'Invalid date format for from_date. Use YYYY-MM-DD.'})
             except ValueError as ve:
-                raise ValidationError(
+                raise DRFValidationError(
                     {'from': 'Invalid date format for from_date. ' + str(ve)})
 
         if to_date:
@@ -70,10 +72,10 @@ class BookingListCreateView(generics.ListCreateAPIView):
                         datetime.combine(parsed_to_date, time.max))
                     queryset = queryset.filter(end_date__lte=to_datetime)
                 else:
-                    raise ValidationError(
+                    raise DRFValidationError(
                         {'to': 'Invalid date format for to_date. Use YYYY-MM-DD.'})
             except ValueError as ve:
-                raise ValidationError(
+                raise DRFValidationError(
                     {'to': 'Invalid date format for to_date. ' + str(ve)})
 
         return queryset
@@ -83,15 +85,15 @@ class BookingListCreateView(generics.ListCreateAPIView):
         start_date = serializer.validated_data['start_date']
         end_date = serializer.validated_data['end_date']
 
-        overlap = Booking.objects.filter(
-            vehicle=vehicle,
-            end_date__gte=start_date,
-            start_date__lte=end_date
-        ).exists()
-
-        if overlap:
-            raise ValidationError(
-                {'detail': 'This vehicle is already booked for the selected dates.'})
+        # Use custom validator for overlap checking
+        try:
+            validate_booking_overlap(vehicle, start_date, end_date)
+        except DjangoValidationError as e:
+            # Convert Django ValidationError to DRF ValidationError
+            if hasattr(e, 'message_dict'):
+                raise DRFValidationError(e.message_dict)
+            else:
+                raise DRFValidationError({'detail': str(e)})
 
         # Save the booking with the current user
         serializer.save(user=self.request.user)

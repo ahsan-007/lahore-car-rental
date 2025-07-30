@@ -81,7 +81,7 @@ class BookingModelTest(TestCase):
             booking.full_clean()
 
         self.assertIn('start_date', context.exception.error_dict)
-        self.assertIn('at least 1 hour in the future', str(context.exception))
+        self.assertIn('at least 1 hour(s) in the future', str(context.exception))
 
     def test_minimum_duration_validation(self):
         """Test validation for minimum booking duration"""
@@ -415,6 +415,8 @@ class BookingViewTest(APITestCase):
             'start_date': overlapping_start.isoformat(),
             'end_date': overlapping_end.isoformat()
         }
+        
+        
 
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

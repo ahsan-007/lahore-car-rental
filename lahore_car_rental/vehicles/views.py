@@ -16,6 +16,13 @@ class VehicleListCreateView(generics.ListCreateAPIView):
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter(
+                'user_id',
+                openapi.IN_QUERY,
+                description="User ID to filter vehicles (required)",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            ),
+            openapi.Parameter(
                 'year',
                 openapi.IN_QUERY,
                 description="Filter vehicles by year (e.g., 2019)",
@@ -30,7 +37,7 @@ class VehicleListCreateView(generics.ListCreateAPIView):
                 required=False
             ),
         ],
-        operation_description="Get list of vehicles with optional filtering by year and make",
+        operation_description="Get list of vehicles for a user with optional filtering by year and make. 'user' query parameter is required.",
         security=[{'Bearer': []}]
     )
     def get(self, request, *args, **kwargs):
@@ -40,7 +47,12 @@ class VehicleListCreateView(generics.ListCreateAPIView):
         if getattr(self, 'swagger_fake_view', False):
             return Vehicle.objects.none()
 
-        queryset = Vehicle.objects.filter(user=self.request.user)
+        user_id = self.request.query_params.get('user_id')
+        if not user_id:
+            raise ValidationError(
+                {"user": "This query parameter is required."})
+
+        queryset = Vehicle.objects.filter(user_id=user_id)
 
         # Filter by year if provided
         year = self.request.query_params.get('year')
@@ -71,10 +83,19 @@ class VehicleDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
             return Vehicle.objects.none()
-        return Vehicle.objects.filter(user=self.request.user)
+        # Allow any user to retrieve any vehicle
+        return Vehicle.objects.all()
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.user != request.user:
+            return Response({"detail": "You do not have permission to update this vehicle."}, status=403)
+        return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        if instance.user != request.user:
+            return Response({"detail": "You do not have permission to delete this vehicle."}, status=403)
         self.perform_destroy(instance)
         return Response({"detail": "Vehicle deleted successfully."}, status=200)
 

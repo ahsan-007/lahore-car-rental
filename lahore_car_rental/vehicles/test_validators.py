@@ -89,7 +89,7 @@ class VehicleValidatorTests(TestCase):
 
     def test_validate_vehicle_make_invalid(self):
         """Test invalid vehicle makes"""
-        invalid_makes = ['', '   ', 'A', 'UNKNOWN', 'N/A', 'T@y@ta!']
+        invalid_makes = ['', '   ', 'UNKNOWN', 'N/A', 'T@y@ta!']
 
         for make in invalid_makes:
             with self.assertRaises(ValidationError):

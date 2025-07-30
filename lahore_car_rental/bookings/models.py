@@ -4,12 +4,18 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import timedelta
 from vehicles.models import Vehicle
+from .validators import (
+    validate_start_date,
+    validate_booking_duration,
+    validate_date_order,
+    validate_booking_overlap
+)
 
 
 class Booking(models.Model):
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    start_date = models.DateTimeField()
+    start_date = models.DateTimeField(validators=[validate_start_date])
     end_date = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -22,44 +28,34 @@ class Booking(models.Model):
 
     def clean(self):
         """
-        Model-level validation for date logic
+        Model-level validation using custom validators
         """
         errors = {}
 
-        if self.start_date and self.end_date:
-            # Validate that end_date is after start_date
-            if self.end_date <= self.start_date:
-                errors['end_date'] = 'End date must be after start date.'
+        # Use custom validators for comprehensive validation
+        try:
+            # Validate date order
+            validate_date_order(self.start_date, self.end_date)
+        except ValidationError as e:
+            errors.update(e.message_dict if hasattr(
+                e, 'message_dict') else {'__all__': e.messages})
 
-            # Validate that start_date is not in the past (with 1 hour buffer for current bookings)
-            current_time = timezone.now()
-            min_booking_time = current_time + timedelta(hours=1)
+        try:
+            # Validate booking duration
+            validate_booking_duration(self.start_date, self.end_date)
+        except ValidationError as e:
+            # Only add duration errors if we don't already have date order errors
+            if not any(field in errors for field in ['start_date', 'end_date']):
+                errors.update(e.message_dict if hasattr(
+                    e, 'message_dict') else {'__all__': e.messages})
 
-            if self.start_date < min_booking_time:
-                errors['start_date'] = 'Booking start date must be at least 1 hour in the future.'
-
-            # Validate booking duration (minimum 1 hour, maximum 30 days)
-            if self.start_date and self.end_date:
-                duration = self.end_date - self.start_date
-                min_duration = timedelta(hours=1)
-                max_duration = timedelta(days=30)
-
-                if duration < min_duration and errors.get('end_date') is None:
-                    errors['end_date'] = 'Booking duration must be for at least 1 hour.'
-
-                if duration > max_duration and errors.get('end_date') is None:
-                    errors['end_date'] = 'Booking duration cannot exceed 30 days.'
-
-        # Validate that the booking doesn't overlap with existing bookings for the same vehicle
-        if self.vehicle and self.start_date and self.end_date:
-            overlapping_bookings = Booking.objects.filter(
-                vehicle=self.vehicle,
-                end_date__gt=self.start_date,
-                start_date__lt=self.end_date
-            )
-
-            if overlapping_bookings.exists():
-                errors['vehicle'] = 'This vehicle is already booked for the selected time period.'
+        try:
+            # Validate booking overlap
+            validate_booking_overlap(
+                self.vehicle, self.start_date, self.end_date, exclude_booking=self)
+        except ValidationError as e:
+            errors.update(e.message_dict if hasattr(
+                e, 'message_dict') else {'__all__': e.messages})
 
         if errors:
             raise ValidationError(errors)

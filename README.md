@@ -112,7 +112,7 @@ python manage.py test bookings
 ### Security
 - JWT-based authentication
 - User-specific data access
-- Input validation and sanitization
+- Input validation using bulti-in and custom validators
 
 ## Development
 

@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from .models import Vehicle
-from django.utils import timezone
 
 
 class VehicleSerializer(serializers.ModelSerializer):
@@ -8,27 +7,26 @@ class VehicleSerializer(serializers.ModelSerializer):
         model = Vehicle
         fields = ['id', 'make', 'model', 'year', 'plate']
 
-    def validate_year(self, value):
-        current_year = timezone.now().year
-        if value > current_year + 1:  # Allow next year for new models
-            raise serializers.ValidationError("Year cannot be in the future.")
+    def validate(self, data):
+        """
+        Cross-field validation using the model's clean method.
+        """
+        # Create a temporary instance for validation
+        instance = Vehicle(**data)
 
-        if value < 1950:  # Add minimum year validation
-            raise serializers.ValidationError("Year must be 1950 or later.")
+        # If this is an update, copy the existing user
+        if self.instance:
+            instance.user = self.instance.user
+            instance.pk = self.instance.pk
 
-        return value
+        # Run model-level validation
+        try:
+            instance.clean()
+        except Exception as e:
+            if hasattr(e, 'message_dict'):
+                raise serializers.ValidationError(e.message_dict)
+            else:
+                raise serializers.ValidationError(
+                    {'non_field_errors': [str(e)]})
 
-    def validate_plate(self, value):
-        if not value or not value.strip():
-            raise serializers.ValidationError("License plate cannot be empty.")
-        return value.strip().upper()  # Normalize plate format
-
-    def validate_make(self, value):
-        if not value or not value.strip():
-            raise serializers.ValidationError("Make cannot be empty.")
-        return value.strip()
-
-    def validate_model(self, value):
-        if not value or not value.strip():
-            raise serializers.ValidationError("Model cannot be empty.")
-        return value.strip()
+        return data

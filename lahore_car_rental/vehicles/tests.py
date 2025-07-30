@@ -68,7 +68,7 @@ class VehicleListCreateViewTest(APITestCase):
 
     def test_list_vehicles_authenticated(self):
         self.client.force_authenticate(user=self.user1)
-        response = self.client.get(self.url)
+        response = self.client.get(self.url, {'user_id': self.user1.id})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['id'], self.vehicle1.id)
@@ -76,13 +76,6 @@ class VehicleListCreateViewTest(APITestCase):
     def test_list_vehicles_unauthenticated(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    def test_list_vehicles_user_isolation(self):
-        self.client.force_authenticate(user=self.user2)
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['id'], self.vehicle2.id)
 
     def test_create_vehicle_authenticated(self):
         self.client.force_authenticate(user=self.user1)
@@ -182,7 +175,7 @@ class VehicleDetailViewTest(APITestCase):
     def test_retrieve_vehicle_not_owner(self):
         self.client.force_authenticate(user=self.user1)
         response = self.client.get(self.url2)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_update_vehicle_owner(self):
         self.client.force_authenticate(user=self.user1)
@@ -216,7 +209,7 @@ class VehicleDetailViewTest(APITestCase):
             'plate': 'XYZ-789'
         }
         response = self.client.put(self.url2, data)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_update_vehicle_duplicate_plate(self):
         self.client.force_authenticate(user=self.user1)
@@ -241,7 +234,7 @@ class VehicleDetailViewTest(APITestCase):
     def test_delete_vehicle_not_owner(self):
         self.client.force_authenticate(user=self.user1)
         response = self.client.delete(self.url2)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_delete_vehicle_unauthenticated(self):
         response = self.client.delete(self.url1)
@@ -296,24 +289,24 @@ class VehiclePermissionTest(APITestCase):
         self.assertIn('IsAuthenticated',
                       [perm.__name__ for perm in view.permission_classes])
 
-    def test_user_can_only_see_own_vehicles(self):
-        # Create another user and vehicle
-        other_user = User.objects.create_user(
-            username='other', password='pass')
-        other_vehicle = Vehicle.objects.create(
-            make='Honda', model='Civic', year=2019, plate='XYZ-789', user=other_user
-        )
 
-        self.client.force_authenticate(user=self.user)
+class VehicleListViewTest(APITestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user(
+            username='user1', password='pass1')
+        self.user2 = User.objects.create_user(
+            username='user2', password='pass2')
+        self.vehicle1 = Vehicle.objects.create(
+            user=self.user2, make='Honda', model='Civic', year=2020, plate='ABC123')
+        self.vehicle2 = Vehicle.objects.create(
+            user=self.user2, make='Toyota', model='Corolla', year=2021, plate='XYZ789')
+        self.url = reverse('vehicle-list-create')
 
-        # User should see only their own vehicle in list
-        list_url = reverse('vehicle-list-create')
-        response = self.client.get(list_url)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['id'], self.vehicle.id)
-
-        # User should not be able to access other user's vehicle
-        other_detail_url = reverse(
-            'vehicle-detail', kwargs={'pk': other_vehicle.pk})
-        response = self.client.get(other_detail_url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    def test_user1_can_see_user2_vehicles(self):
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get(self.url, {'user_id': self.user2.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        returned_plates = {v['plate'] for v in response.data}
+        self.assertIn('ABC123', returned_plates)
+        self.assertIn('XYZ789', returned_plates)

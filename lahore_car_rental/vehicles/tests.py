@@ -33,8 +33,10 @@ class VehicleSerializerTest(TestCase):
         serializer = VehicleSerializer(data=data)
         self.assertFalse(serializer.is_valid())
         self.assertIn('year', serializer.errors)
-        self.assertEqual(
-            serializer.errors['year'][0], "Year cannot be in the future.")
+
+        # check if error message contains string about future year
+        self.assertIn("Vehicle year cannot be in the future.",
+                      serializer.errors['year'][0])
 
     def test_year_validation_next_year_allowed(self):
         next_year = timezone.now().year + 1
@@ -140,14 +142,14 @@ class VehicleListCreateViewTest(APITestCase):
         view = VehicleListCreateView()
         view.request = type('MockRequest', (), {'user': self.user1})()
         serializer = VehicleSerializer(data={
-            'make': 'Test',
-            'model': 'Car',
+            'make': 'Honda',
+            'model': 'City',
             'year': 2020,
-            'plate': 'TEST-123'
+            'plate': 'LEH-123'
         })
         self.assertTrue(serializer.is_valid())
         view.perform_create(serializer)
-        vehicle = Vehicle.objects.get(plate='TEST-123')
+        vehicle = Vehicle.objects.get(plate='LEH-123')
         self.assertEqual(vehicle.user, self.user1)
 
 

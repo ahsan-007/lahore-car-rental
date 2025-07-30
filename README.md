@@ -6,7 +6,8 @@ A Django REST Framework API for managing car rental bookings in Lahore.
 
 - **User Authentication**: JWT-based authentication with registration and login
 - **Vehicle Management**: CRUD operations for vehicles with user ownership
-- **Filtering**: Filter vehicles by make and/or year
+- **Booking System**: Create and manage car rental bookings
+- **Filtering**: Filter vehicles by make and/or year, Filter bookings by from_date and/or to_date
 - **API Documentation**: Swagger/OpenAPI documentation
 - **Comprehensive Testing**: Unit tests for models, serializers, and views
 
@@ -30,6 +31,10 @@ A Django REST Framework API for managing car rental bookings in Lahore.
 - `GET /vehicles/{id}/` - Get vehicle details
 - `PUT /vehicles/{id}/` - Update vehicle
 - `DELETE /vehicles/{id}/` - Delete vehicle
+
+### Bookings
+- `GET /bookings/` - List user's bookings (with date filtering)
+- `POST /bookings/` - Create new booking
 
 ### Documentation
 - `/swagger/` - Swagger UI
@@ -93,8 +98,16 @@ Run specific app tests:
 ```bash
 python manage.py test authentication
 python manage.py test vehicles
+python manage.py test bookings
 ```
 
+## Features Detail
+
+### Business Logic
+- **Booking Validation**: Prevents overlapping bookings for the same vehicle
+- **Date Validation**: Ensures bookings are at least 1 hour in the future
+- **Duration Limits**: Minimum 1 hour, maximum 30 days
+- **User Isolation**: Users can only see and manage their own vehicles and bookings
 
 ### Security
 - JWT-based authentication
